@@ -439,6 +439,29 @@ class Test(TestCase):
             del __tracebackhide__
         ''', m.UndefinedName)
 
+    def test_delShadowedBuiltin(self):
+        """
+        Deleting a module-level binding that shadows a builtin makes the
+        builtin visible again.
+        """
+        self.flakes('''
+        int = 42
+        del int
+        int('42')
+        ''')
+
+    def test_delShadowedBuiltinUsedInFunction(self):
+        """
+        Same as above for a custom builtin used in a function, as with
+        gettext's ``_``.
+        """
+        self.flakes('''
+        _ = lambda s: s
+        del _
+        def f():
+            return _('message')
+        ''', builtins={'_'})
+
     def test_globalFromNestedScope(self):
         """Global names are available from nested scopes."""
         self.flakes('''

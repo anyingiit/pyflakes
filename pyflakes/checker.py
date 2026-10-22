@@ -1176,9 +1176,18 @@ class Checker:
             self.scope.indirect_assignments.pop(node.id, None)
 
         try:
-            del self.scope[node.id]
+            binding = self.scope.pop(node.id)
         except KeyError:
             self.report(messages.UndefinedName, node, node.id)
+        else:
+            # deleting a module-level name that shadowed a builtin makes the
+            # builtin visible again
+            if (
+                    self.scope is self.scopeStack[0] and
+                    node.id in self.builtIns and
+                    not isinstance(binding, Builtin)
+            ):
+                self.scope[node.id] = Builtin(node.id)
 
     @contextlib.contextmanager
     def _enter_annotation(self, ann_type=AnnotationState.BARE):
